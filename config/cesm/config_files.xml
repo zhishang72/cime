@@ -96,6 +96,7 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_compsets.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_compsets.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_compsets.xml</value>
+      <value component="mom"     >$SRCROOT/components/mom/cime_config/config_compsets.xml</value>
       <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
@@ -115,6 +116,7 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_pes.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_pes.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_pes.xml</value>
+      <value component="mom"     >$SRCROOT/components/mom/cime_config/config_pes.xml</value>
       <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/config_pes.xml</value>
     </values>
     <group>case_last</group>
@@ -141,6 +143,7 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/config_archive.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_archive.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/config_archive.xml</value>
+      <value component="mom"     >$SRCROOT/components/mom/cime_config/config_archive.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -155,6 +158,7 @@
       <value component="clm">$SRCROOT/components/clm/cime_config/SystemTests</value>
       <value component="cam">$SRCROOT/components/cam/cime_config/SystemTests</value>
       <value component="pop">$SRCROOT/components/pop/cime_config/SystemTests</value>
+      <value component="mom">$SRCROOT/components/mom/cime_config/SystemTests</value>
       <value component="cice">$SRCROOT/components/cice/cime_config/SystemTests</value>
       <value component="cism">$SRCROOT/components/cism/cime_config/SystemTests</value>
       <value component="rtm">$SRCROOT/components/rtm/cime_config/SystemTests</value>
@@ -176,6 +180,7 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testlist_clm.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testlist_cice.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testlist_pop.xml</value>
+      <value component="mom"     >$SRCROOT/components/mom/cime_config/testdefs/testlist_mom.xml</value>
       <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testlist_rtm.xml</value>
       <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testlist_mosart.xml</value>
     </values>
@@ -198,6 +203,7 @@
       <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testmods_dirs</value>
       <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testmods_dirs</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testmods_dirs</value>
+      <value component="mom"     >$SRCROOT/components/mom/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -217,6 +223,7 @@
       <value component="rtm"      >$SRCROOT/components/rtm/cime_config/usermods_dirs</value>
       <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/usermods_dirs</value>
+      <value component="mom"     >$SRCROOT/components/mom/cime_config/usermods_dirs</value>
       <value component="mpas-o"   >$SRCROOT/components/mpas-o/cime_config/usermods_dirs</value>
     </values>
     <group>case_last</group>
@@ -246,7 +253,7 @@
       <value component="cice"     >$SRCROOT/components/cice/cime_config/namelist_definition_cice.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/bld/namelist_files/namelist_definition_clm4_5.xml</value>
       <value component="clm"      >$SRCROOT/components/clm/bld/namelist_files/namelist_definition_clm4_0.xml</value>
-      <value component="pop"      >$SRCROOT/components/pop/bld/namelist_files/namelist_definition_pop.xml</value>
+      <value component="mom"     >$SRCROOT/components/mom/bld/namelist_files/namelist_definition_mom.xml</value>
       -->
     </values>
     <group>case_last</group>
@@ -265,8 +272,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all non-component specific case configuration variables (for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
@@ -275,8 +281,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing all component specific driver configuration variables (for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ATM_FILE">
@@ -291,8 +296,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_LND_FILE">
@@ -308,8 +312,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ROF_FILE">
@@ -325,8 +328,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ICE_FILE">
@@ -341,8 +343,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_OCN_FILE">
@@ -350,6 +351,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="pop"  >$SRCROOT/components/pop/cime_config/config_component.xml</value>
+      <value component="mom" >$SRCROOT/components/mom/cime_config/config_component.xml</value>
       <value component="mpas-o"  >$SRCROOT/components/mpas-o/cime_config/config_component.xml</value>
       <value component="aquap">$SRCROOT/components/aquap/cime_config/config_component.xml</value>
       <value component="docn" >$CIMEROOT/src/components/data_comps/docn/cime_config/config_component.xml</value>
@@ -359,8 +361,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_GLC_FILE">
@@ -375,8 +376,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_WAV_FILE">
@@ -391,8 +391,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
   <entry id="CONFIG_ESP_FILE">
@@ -405,8 +404,7 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
-    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
-    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+    <schema>$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
   </entry>
 
 </entry_id>
