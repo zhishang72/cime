@@ -521,7 +521,7 @@ class Case(object):
         """
 
         component = self._primary_component
-
+        logger.info("Primary component is %s"%component)
         if pesfile is None:
             self._pesfile = files.get_value("PES_SPEC_FILE", {"component":component})
             pesfile_unresolved = files.get_value("PES_SPEC_FILE", {"component":component}, resolved=False)
