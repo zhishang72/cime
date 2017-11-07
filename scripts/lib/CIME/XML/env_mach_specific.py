@@ -5,7 +5,7 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root
-import string
+import string, resource
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +18,14 @@ class EnvMachSpecific(EnvBase):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
-        fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
         schema = os.path.join(get_cime_root(), "config", "xml_schemas", "env_mach_specific.xsd")
-        EnvBase.__init__(self, caseroot, fullpath,schema=schema)
+        EnvBase.__init__(self, caseroot, infile, schema=schema)
         self._allowed_mpi_attributes = ("compiler", "mpilib", "threaded", "unit_testing")
         self._unit_testing = unit_testing
 
     def populate(self, machobj):
         """Add entries to the file using information from a Machines object."""
-        items = ("module_system", "environment_variables", "mpirun", "run_exe","run_misc_suffix")
+        items = ("module_system", "environment_variables", "resource_limits", "mpirun", "run_exe","run_misc_suffix")
         default_run_exe_node = machobj.get_node("default_run_exe")
         default_run_misc_suffix_node = machobj.get_node("default_run_misc_suffix")
 
@@ -55,45 +54,60 @@ class EnvMachSpecific(EnvBase):
                 for node in nodes:
                     self.add_child(node)
 
-    def _get_modules_for_case(self, compiler, debug, mpilib):
+    def _get_modules_for_case(self, case):
         module_nodes = self.get_nodes("modules")
         modules_to_load = None
         if module_nodes is not None:
-            modules_to_load = self._compute_module_actions(module_nodes, compiler, debug, mpilib)
+            modules_to_load = self._compute_module_actions(module_nodes, case)
 
         return modules_to_load
 
-    def _get_envs_for_case(self, compiler, debug, mpilib):
+    def _get_envs_for_case(self, case):
         env_nodes = self.get_nodes("environment_variables")
 
         envs_to_set = None
         if env_nodes is not None:
-            envs_to_set = self._compute_env_actions(env_nodes, compiler, debug, mpilib)
+            envs_to_set = self._compute_env_actions(env_nodes, case)
 
         return envs_to_set
 
-    def load_env(self, compiler, debug, mpilib):
+    def load_env(self, case):
         """
         Should only be called by case.load_env
         """
         # Do the modules so we can refer to env vars set by the modules
         # in the environment_variables block
-        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
+        modules_to_load = self._get_modules_for_case(case)
         if (modules_to_load is not None):
             self.load_modules(modules_to_load)
 
-        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
+        envs_to_set = self._get_envs_for_case(case)
         if (envs_to_set is not None):
             self.load_envs(envs_to_set)
+
+        self._get_resources_for_case(case)
+
+    def _get_resources_for_case(self, case):
+        resource_nodes = self.get_nodes("resource_limits")
+        if resource_nodes is not None:
+            nodes = self._compute_resource_actions(resource_nodes, case)
+            for name, val in nodes:
+                attr = getattr(resource, name)
+                limits = resource.getrlimit(attr)
+                logger.info("Setting resource.{} to {} from {}".format(name, val, limits))
+                limits = (int(val), limits[1])
+                resource.setrlimit(attr, limits)
 
     def load_modules(self, modules_to_load):
         module_system = self.get_module_system_type()
         if (module_system == "module"):
             self._load_module_modules(modules_to_load)
+        elif (module_system == "module_lmod"):
+            self._load_modules_generic(modules_to_load)
         elif (module_system == "soft"):
-            self._load_soft_modules(modules_to_load)
-        elif (module_system == "dotkit"):
-            self._load_dotkit_modules(modules_to_load)
+            self._load_modules_generic(modules_to_load)
+        elif (module_system == "generic"):
+            self._load_modules_generic(modules_to_load)
         elif (module_system == "none"):
             self._load_none_modules(modules_to_load)
         else:
@@ -111,12 +125,12 @@ class EnvMachSpecific(EnvBase):
         else:
             source_cmd = ""
 
-        if (module_system == "module"):
+        if (module_system in ["module", "module_lmod"]):
             return run_cmd_no_fail("{}module list".format(source_cmd), combine_output=True)
         elif (module_system == "soft"):
             # Does soft really not provide this capability?
             return ""
-        elif (module_system == "dotkit"):
+        elif (module_system == "generic"):
             return run_cmd_no_fail("{}use -lv".format(source_cmd))
         elif (module_system == "none"):
             return ""
@@ -132,9 +146,9 @@ class EnvMachSpecific(EnvBase):
             f.write(self.list_modules())
         run_cmd_no_fail("echo -e '\n' && env", arg_stdout=filename)
 
-    def make_env_mach_specific_file(self, compiler, debug, mpilib, shell):
-        modules_to_load = self._get_modules_for_case(compiler, debug, mpilib)
-        envs_to_set = self._get_envs_for_case(compiler, debug, mpilib)
+    def make_env_mach_specific_file(self, shell, case):
+        modules_to_load = self._get_modules_for_case(case)
+        envs_to_set = self._get_envs_for_case(case)
         filename = ".env_mach_specific.{}".format(shell)
         lines = []
         if modules_to_load is not None:
@@ -154,24 +168,28 @@ class EnvMachSpecific(EnvBase):
 
     def load_envs(self, envs_to_set):
         for env_name, env_value in envs_to_set:
-            os.environ[env_name] = env_value
+            os.environ[env_name] = "" if env_value is None else env_value
 
     # Private API
 
-    def _compute_module_actions(self, module_nodes, compiler, debug, mpilib):
-        return self._compute_actions(module_nodes, "command", compiler, debug, mpilib)
+    def _compute_module_actions(self, module_nodes, case):
+        return self._compute_actions(module_nodes, "command", case)
 
-    def _compute_env_actions(self, env_nodes, compiler, debug, mpilib):
-        return self._compute_actions(env_nodes, "env", compiler, debug, mpilib)
+    def _compute_env_actions(self, env_nodes, case):
+        return self._compute_actions(env_nodes, "env", case)
 
-    def _compute_actions(self, nodes, child_tag, compiler, debug, mpilib):
+    def _compute_resource_actions(self, resource_nodes, case):
+        return self._compute_actions(resource_nodes, "resource", case)
+
+    def _compute_actions(self, nodes, child_tag, case):
         result = [] # list of tuples ("name", "argument")
+        compiler, mpilib = case.get_value("COMPILER"), case.get_value("MPILIB")
 
         for node in nodes:
-            if (self._match_attribs(node.attrib, compiler, debug, mpilib)):
+            if (self._match_attribs(node.attrib, case)):
                 for child in node:
                     expect(child.tag == child_tag, "Expected {} element".format(child_tag))
-                    if (self._match_attribs(child.attrib, compiler, debug, mpilib)):
+                    if (self._match_attribs(child.attrib, case)):
                         val = child.text
                         if val is not None:
                             # We allow a couple special substitutions for these fields
@@ -180,36 +198,39 @@ class EnvMachSpecific(EnvBase):
 
                             val = self.get_resolved_value(val)
                             expect("$" not in val, "Not safe to leave unresolved items in env var value: '{}'".format(val))
+
                         # intentional unindent, result is appended even if val is None
                         result.append( (child.get("name"), val) )
 
         return result
 
-    def _match_attribs(self, attribs, compiler, debug, mpilib):
-        if ("compiler" in attribs and
-            not self._match(compiler, attribs["compiler"])):
-            return False
-        elif ("mpilib" in attribs and
-            not self._match(mpilib, attribs["mpilib"])):
-            return False
-        elif ("debug" in attribs and
-            not self._match("TRUE" if debug else "FALSE", attribs["debug"].upper())):
-            return False
-        elif ("unit_testing" in attribs and
-              not self._match("TRUE" if self._unit_testing else "FALSE",
-                              attribs["unit_testing"].upper())):
-            return False
+    def _match_attribs(self, attribs, case):
+        # check for matches with case-vars
+        for attrib in attribs:
+            if attrib == "unit_testing": # special case
+                if not self._match(self._unit_testing, attribs["unit_testing"].upper()):
+                    return False
+            elif attrib == "name":
+                pass
+            else:
+                val = case.get_value(attrib.upper())
+                expect(val is not None, "Cannot match attrib '%s', case has no value for it" % attrib.upper())
+                if not self._match(val, attribs[attrib]):
+                    return False
 
         return True
 
     def _match(self, my_value, xml_value):
-        if (xml_value.startswith("!")):
+        if xml_value.startswith("!"):
             result = my_value != xml_value[1:]
+        elif isinstance(my_value, bool):
+            if my_value: result = xml_value == "TRUE"
+            else: result = xml_value == "FALSE"
         else:
             result = my_value == xml_value
+
         logger.debug("(env_mach_specific) _match {} {} {}".format(my_value, xml_value, result))
         return result
-
 
     def _get_module_commands(self, modules_to_load, shell):
         # Note this is independent of module system type
@@ -229,24 +250,20 @@ class EnvMachSpecific(EnvBase):
                    "module command {} failed with message:\n{}".format(cmd, errout))
             exec(py_module_code)
 
-    def _load_soft_modules(self, modules_to_load):
+    def _load_modules_generic(self, modules_to_load):
         sh_init_cmd = self.get_module_system_init_path("sh")
         sh_mod_cmd = self.get_module_system_cmd_path("sh")
 
-        # Some machines can set the environment
-        # variables using a script (such as /etc/profile.d/00softenv.sh
-        # on mira or /etc/profile.d/a_softenv.sh on blues)
-        # which load the new environment variables using softenv-load.
-
-        # Other machines need to run soft-dec.sh and evaluate the output,
-        # which may or may not have unresolved variables such as
-        # PATH=/soft/com/packages/intel/16/initial/bin:${PATH}
+        # Purpose is for environment management system that does not have
+        # a python interface and therefore can only determine what they
+        # do by running shell command and looking at the changes
+        # in the environment.
 
         cmd = "source {}".format(sh_init_cmd)
 
-        if os.environ.has_key("SOFTENV_ALIASES"):
+        if "SOFTENV_ALIASES" in os.environ:
             cmd += " && source $SOFTENV_ALIASES"
-        if os.environ.has_key("SOFTENV_LOAD"):
+        if "SOFTENV_LOAD" in os.environ:
             cmd += " && source $SOFTENV_LOAD"
 
         for action,argument in modules_to_load:
@@ -289,9 +306,6 @@ class EnvMachSpecific(EnvBase):
             else:
                 os.environ[key] = newenv[key]
 
-    def _load_dotkit_modules(self, _):
-        expect(False, "Not yet implemented")
-
     def _load_none_modules(self, modules_to_load):
         """
         No Action required
@@ -329,7 +343,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, check_members=None, job="case.run", exe_only=False):
+    def get_mpirun(self, case, attribs, job="case.run", exe_only=False):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -345,7 +359,7 @@ class EnvMachSpecific(EnvBase):
             matches = 0
             is_default = False
 
-            for key, value in attribs.iteritems():
+            for key, value in attribs.items():
                 expect(key in self._allowed_mpi_attributes, "Unexpected key {} in mpirun attributes".format(key))
                 if key in xml_attribs:
                     if xml_attribs[key].lower() == "false":
@@ -391,7 +405,6 @@ class EnvMachSpecific(EnvBase):
                     arg_value = transform_vars(arg_node.text,
                                                case=case,
                                                subgroup=job,
-                                               check_members=check_members,
                                                default=arg_node.get("default"))
                     args.append(arg_value)
 

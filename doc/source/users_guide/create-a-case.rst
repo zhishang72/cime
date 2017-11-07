@@ -12,15 +12,13 @@ The first step in creating a CIME-based experiment is to use **create_newcase**.
 
 If you are not on an out-of-the box CIME-supported platform, you will need to :ref:`port <porting>` CIME to your system before proceeding.
 
-Review the input options for **create_newcase** in the  **help** text.
-  ::
+Review the input options for **create_newcase** in the  **help** text.::
 
-     > create_newcase --help
+  > create_newcase --help
 
-The only required arguments to **create_newcase** are shown here:
-  ::
+The only required arguments to **create_newcase** are shown here::
 
-     > create_newcase --case [CASE] --compset [COMPSET] --res [GRID]
+  > create_newcase --case [CASE] --compset [COMPSET] --res [GRID]
 
 CIME supports out-of-the-box *component sets*, *model grids* and *hardware platforms*. Compsets and grids were discussed in the :ref:`previous section <case-basics>`.
 
@@ -29,13 +27,12 @@ Results of calling **create_newcase**
 ======================================
 
 Following is a simple example of using **create_newcase** with aliases for both compset and grid names.
-The complete example appears in the :ref:`basic example <faq-basic-example>`.
+The complete example appears in the :ref:`basic example <use-cases-basic-example>`.
 
-Here, ``$CIMEROOT`` is the full pathname of the root directory of the CIME distribution.
-  ::
+Here, ``$CIMEROOT`` is the full pathname of the root directory of the CIME distribution::
 
-   > cd $CIMEROOT/scripts
-   > create_newcase --case ~/cime/example1 --compset A --res f09_g16_rx1
+  > cd $CIMEROOT/scripts
+  > create_newcase --case ~/cime/example1 --compset A --res f09_g16_rx1
 
 In the example, the command creates a ``$CASEROOT`` directory: **~/cime/example1**. If that directory already exists, a warning is printed and the command aborts. Additional details:
 
@@ -97,7 +94,8 @@ Running **create_newcase** creates various scripts, files and directories ``$CAS
 
    =====================  ===============================================================================================================================
    SourceMods             Top-level directory containing subdirectories for each compset component where
-                          you can place modified source code for that component.
+                          you can place modified source code for that component.  You may also place modified
+			  buildnml and buildlib scripts here.
    =====================  ===============================================================================================================================
 
 - ``Provenance``
@@ -140,5 +138,3 @@ These other files can be "unlocked" as follows:
 - To unlock **env_mach_pes.xml**, run ``case.setup --clean``.
 
 - To unlock **env_build.xml**, run ``case.build --clean``.
-
-

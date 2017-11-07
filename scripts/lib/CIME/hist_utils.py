@@ -5,7 +5,7 @@ Functions for actions pertaining to history files.
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT
 
-import logging, glob, os, shutil, re, stat
+import logging, glob, os, shutil, re, stat, filecmp
 logger = logging.getLogger(__name__)
 
 def _iter_model_file_substrs(case):
@@ -182,10 +182,10 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
     all_success = True
     num_compared = 0
     comments = "Comparing hists for case '{}' dir1='{}', suffix1='{}',  dir2='{}' suffix2='{}'\n".format(testcase, from_dir1, suffix1, from_dir2, suffix2)
-    multiinst_cpl_compare = False
+    multiinst_driver_compare = False
     for model in _iter_model_file_substrs(case):
         if model == 'cpl' and suffix2 == 'multiinst':
-            multiinst_cpl_compare = True
+            multiinst_driver_compare = True
         comments += "  comparing model '{}'\n".format(model)
         hists1 = _get_latest_hist_files(testcase, model, from_dir1, suffix1)
         hists2 = _get_latest_hist_files(testcase, model, from_dir2, suffix2)
@@ -205,14 +205,20 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         for hist1, hist2 in match_ups:
             success, cprnc_log_file = cprnc(model, hist1, hist2, case, from_dir1,
-                                            multiinst_cpl_compare = multiinst_cpl_compare,
-                                            outfile_suffix = outfile_suffix)
+                                            multiinst_driver_compare=multiinst_driver_compare,
+                                            outfile_suffix=outfile_suffix)
             if success:
                 comments += "    {} matched {}\n".format(hist1, hist2)
             else:
                 comments += "    {} did NOT match {}\n".format(hist1, hist2)
                 comments += "    cat " + cprnc_log_file + "\n"
-                shutil.copy(cprnc_log_file, casedir)
+                expected_log_file = os.path.join(casedir, os.path.basename(cprnc_log_file))
+                if not (os.path.exists(expected_log_file) and filecmp.cmp(cprnc_log_file, expected_log_file)):
+                    try:
+                        shutil.copy(cprnc_log_file, casedir)
+                    except OSError:
+                        logger.warning("Could not copy {} to {}".format(cprnc_log_file, casedir))
+
                 all_success = False
 
     if num_compared == 0:
@@ -237,7 +243,7 @@ def compare_test(case, suffix1, suffix2):
 
     return _compare_hists(case, rundir, rundir, suffix1, suffix2)
 
-def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfile_suffix=""):
+def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix=""):
     """
     Run cprnc to compare two individual nc files
 
@@ -270,11 +276,14 @@ def cprnc(model, file1, file2, case, rundir, multiinst_cpl_compare=False, outfil
     if outfile_suffix:
         output_filename += ".{}".format(outfile_suffix)
 
-    cpr_stat = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
-    with open(output_filename, "r") as fd:
-        out = fd.read()
+    if outfile_suffix is None:
+        cpr_stat, out, _ = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True)
+    else:
+        cpr_stat = run_cmd("{} -m {} {}".format(cprnc_exe, file1, file2), combine_output=True, arg_stdout=output_filename)[0]
+        with open(output_filename, "r") as fd:
+            out = fd.read()
 
-    if multiinst_cpl_compare:
+    if multiinst_driver_compare:
         #  In a multiinstance test the cpl hist file will have a different number of
         # dimensions and so cprnc will indicate that the files seem to be DIFFERENT
         # in this case we only want to check that the fields we are able to compare
@@ -290,7 +299,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     case - The case containing the hist files to be compared against baselines
     baseline_dir - Optionally, specify a specific baseline dir, otherwise it will be computed from case config
     outfile_suffix - if non-blank, then the cprnc output file name ends with
-        this suffix (with a '.' added before the given suffix)
+        this suffix (with a '.' added before the given suffix). if None, no output file saved.
 
     returns (SUCCESS, comments)
     SUCCESS means all hist files matched their corresponding baseline
@@ -308,7 +317,7 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
         if not os.path.isdir(bdir):
             return False, "ERROR {} baseline directory '{}' does not exist".format(TEST_NO_BASELINES_COMMENT,bdir)
 
-    return _compare_hists(case, rundir, basecmp_dir, outfile_suffix = outfile_suffix)
+    return _compare_hists(case, rundir, basecmp_dir, outfile_suffix=outfile_suffix)
 
 def get_extension(model, filepath):
     """
@@ -398,10 +407,12 @@ def generate_baseline(case, baseline_dir=None, allow_baseline_overwrite=False):
 
     # copy latest cpl log to baseline
     # drop the date so that the name is generic
-    newestcpllogfile = case.get_latest_cpl_log()
-    if newestcpllogfile:
+    newestcpllogfile = case.get_latest_cpl_log(coupler_log_path=case.get_value("LOGDIR"))
+    if newestcpllogfile is None:
+        logger.warning("No cpl.log file found in log directory {}".format(case.get_value("LOGDIR")))
+    else:
         shutil.copyfile(newestcpllogfile,
-                        os.path.join(basegen_dir, "cpl.log.gz"))
+                    os.path.join(basegen_dir, "cpl.log.gz"))
 
     expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(testcase))
     #make sure permissions are open in baseline directory

@@ -7,6 +7,7 @@ which does not change the CAM input. Compares answers to non-DA run.
 import os.path
 import logging
 import glob
+import gzip
 
 import CIME.XML.standard_module_setup as sms
 from CIME.SystemTests.system_tests_compare_two import SystemTestsCompareTwo
@@ -54,13 +55,13 @@ class DAE(SystemTestsCompareTwo):
         self._case.set_value("DATA_ASSIMILATION_CYCLES", 2)
         stopn = self._case.get_value("STOP_N")
         expect((stopn % 2) == 0, "ERROR: DAE test requires that STOP_N be even")
-        stopn = stopn / 2
+        stopn = int(stopn / 2)
         self._case.set_value("STOP_N", stopn)
 
         self._case.flush()
 
     ###########################################################################
-    def run_phase(self):
+    def run_phase(self): # pylint: disable=arguments-differ
     ###########################################################################
         # Clean up any da.log files in case this is a re-run.
         self._activate_case2()
@@ -93,7 +94,7 @@ class DAE(SystemTestsCompareTwo):
         for fname in da_files:
             found_caseroot = False
             found_cycle = False
-            with open(fname) as dfile:
+            with gzip.open(fname, "r") as dfile:
                 for line in dfile:
                     expect(line[0:5] != 'ERROR', "ERROR, error line found in {}".format(fname))
                     if line[0:8] == 'caseroot':

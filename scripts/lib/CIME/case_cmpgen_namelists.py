@@ -119,6 +119,13 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             output = ""
             if compare:
                 success, output = _do_full_nl_comp(case, test_name, compare_name, baseline_root)
+                if not success and ts.get_status(RUN_PHASE) is not None:
+                    run_warn = \
+"""NOTE: It is not necessarily safe to compare namelists after RUN
+phase has completed. Running a case can pollute namelists. The namelists
+kept in the baselines are pre-RUN namelists."""
+                    output += run_warn
+                    logging.info(run_warn)
             if generate:
                 _do_full_nl_gen(case, test_name, generate_name, baseline_root)
         except:
@@ -129,7 +136,10 @@ def case_cmpgen_namelists(case, compare=False, generate=False, compare_name=None
             logging.warning(warn)
         finally:
             ts.set_status(NAMELIST_PHASE, TEST_PASS_STATUS if success else TEST_FAIL_STATUS)
-            append_status(output, logfile_name, caseroot=caseroot)
+            try:
+                append_status(output, logfile_name, caseroot=caseroot)
+            except IOError:
+                pass
 
         return success
 
