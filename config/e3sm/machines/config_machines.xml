@@ -756,7 +756,7 @@
   <DESC>SNL clust</DESC>
   <NODENAME_REGEX>(skybridge|chama)</NODENAME_REGEX>
   <PROXY>wwwproxy.sandia.gov:80</PROXY>
-  <TESTS>acme_integration</TESTS>
+  <TESTS>e3sm_integration</TESTS>
   <COMPILERS>intel</COMPILERS>
   <MPILIBS>openmpi</MPILIBS>
   <OS>LINUX</OS>
@@ -1548,8 +1548,11 @@
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
       <env name="SMP_VARS"></env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <env name="SMP_VARS">--cc depth -d $ENV{OMP_NUM_THREADS} -j $ENV{OMP_NUM_THREADS} -e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
+    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+      <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
     </environment_variables>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
