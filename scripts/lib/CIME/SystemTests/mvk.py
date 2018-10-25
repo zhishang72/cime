@@ -22,13 +22,13 @@ from CIME.utils import expect
 import CIME.test_status
 
 import evv4esm  # pylint: disable=import-error
-from evv4esm.__main__ import main as evv # pylint: disable=import-error
+from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
 
 # Build executable with multiple instances
-ninst = 20
+ninst = 30
 
 
 class MVK(SystemTestsCommon):
@@ -106,7 +106,9 @@ class MVK(SystemTestsCommon):
 
             model = 'cam'
             comments += "  generating for model '{}'\n".format(model)
-            hists = _get_all_hist_files(testcase, model, rundir)
+            archive = self._case.get_env("archive")
+            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+            hists = _get_all_hist_files(model, rundir, file_extensions)
             logger.debug("mvk_hist_files: {}".format(hists))
 
             num_gen += len(hists)
