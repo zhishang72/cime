@@ -74,6 +74,28 @@ def buildlib(bldroot, installpath, case):
     run_bld_cmd_ensure_logging("{} -j {}".format(gmake_cmd, case.get_value("GMAKE_J")), logger, from_dir=pio_dir)
 
     if pio_version == 1:
+        expect_string = "D_NETCDF;"
+        pnetcdf_string = "D_PNETCDF"
+        netcdf4_string = "D_NETCDF4"
+    else:
+        expect_string = "NetCDF_C_LIBRARY-ADVANCED"
+        pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
+        netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
+
+    expect_string_found = False
+    pnetcdf_found = False
+    netcdf4_parallel_found = False
+
+    cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
+    for line in cache_file:
+        if re.search(expect_string, line):
+            expect_string_found = True
+        if re.search(pnetcdf_string, line):
+            pnetcdf_found = True
+        if re.search(netcdf4_string, line):
+            netcdf4_parallel_found = True
+
+    if pio_version == 1:
         installed_lib = os.path.join(installpath,"lib","libpio.a")
         installed_lib_time = 0
         if os.path.isfile(installed_lib):
@@ -86,9 +108,6 @@ def buildlib(bldroot, installpath, case):
             for glob_to_copy in ("*.h", "*.mod"):
                 for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
                     safe_copy(item, "{}/include".format(installpath))
-        expect_string = "D_NETCDF;"
-        pnetcdf_string = "D_PNETCDF"
-        netcdf4_string = "D_NETCDF4"
     else:
         globs_to_copy = (os.path.join("src","clib","libpioc.*"),
                          os.path.join("src","flib","libpiof.*"),
@@ -107,25 +126,8 @@ def buildlib(bldroot, installpath, case):
                     installed_file_time = os.path.getmtime(installed_file)
                 if item_time  > installed_file_time:
                     safe_copy(item, installed_file)
-        expect_string = "NetCDF_C_LIBRARY-ADVANCED"
-        pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
-        netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
-
 
     # make sure case pio_typename valid_values is set correctly
-    expect_string_found = False
-    pnetcdf_found = False
-    netcdf4_parallel_found = False
-
-    cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
-    for line in cache_file:
-        if re.search(expect_string, line):
-            expect_string_found = True
-        if re.search(pnetcdf_string, line):
-            pnetcdf_found = True
-        if re.search(netcdf4_string, line):
-            netcdf4_parallel_found = True
-
     expect(expect_string_found, "CIME models require NETCDF in PIO build")
     valid_values = "netcdf"
     if pnetcdf_found:
