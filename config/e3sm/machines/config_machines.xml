@@ -863,6 +863,9 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
+      <env name="ADIOS_PATH">/soft/apps/packages/climate/adios/1.13.1/gcc-6.2.0</env>
+    </environment_variables>
+    <environment_variables>
       <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which ncdump))}</env>
     </environment_variables>
     <environment_variables>

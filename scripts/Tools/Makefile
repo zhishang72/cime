@@ -98,6 +98,9 @@ ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
 
+ifeq ($(strip $(PIO_VERSION)),2)
+   USE_CXX = true
+endif
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
@@ -199,6 +202,17 @@ endif
 
 ifndef AR
    AR := ar
+endif
+
+ifeq ($(PIO_VERSION),2)
+  ifdef ADIOS_PATH
+    ifndef INC_ADIOS
+      INC_ADIOS:=$(ADIOS_PATH)/include
+    endif
+    ifndef LIB_ADIOS
+      LIB_ADIOS:=$(ADIOS_PATH)/lib
+    endif
+  endif
 endif
 
 ifdef NETCDF_C_PATH
@@ -359,6 +373,11 @@ ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
 endif
 
+ifdef LIB_ADIOS
+   CPPDEFS += -D_ADIOS
+   SLIBS += -L$(LIB_ADIOS)
+endif
+
 # Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
 CIME_ESMFMKFILE := undefined_ESMFMKFILE
 ifdef ESMFMKFILE
@@ -455,6 +474,9 @@ ifdef INC_MPI
 endif
 ifdef INC_PNETCDF
   INCLDIR += -I$(INC_PNETCDF)
+endif
+ifdef INC_ADIOS
+  INCLDIR += -I$(INC_ADIOS)
 endif
 ifdef INC_PETSC
   INCLDIR += -I$(INC_PETSC)
@@ -675,6 +697,13 @@ else
 endif
 #endif
 
+ifeq ($(PIO_VERSION),2)
+  #ifdef ADIOS_PATH
+    PIOLIB += $(PIO_LIBDIR)/tools/adios2pio-nm/libadios2pio-nm-lib.a
+    PIOLIBNAME += -ladios2pio-nm-lib
+  #endif
+endif
+
 MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a
 
 GPTLLIB = $(GPTL_LIBDIR)/libgptl.a
@@ -721,6 +750,11 @@ else
 endif
 ifdef PIO_FILESYSTEM_HINTS
 	CMAKE_OPTS += -D PIO_FILESYSTEM_HINTS:STRING="$(PIO_FILESYSTEM_HINTS)"
+endif
+
+ifdef ADIOS_PATH
+  CMAKE_OPTS += -DWITH_ADIOS:BOOL=TRUE \
+                -DADIOS_DIR:PATH="$(ADIOS_PATH)"
 endif
 
 # This captures the many cism-specific options to cmake

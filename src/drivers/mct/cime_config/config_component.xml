@@ -2214,7 +2214,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
@@ -2236,7 +2236,7 @@
     <valid_values>classic,64bit_offset,64bit_data</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio netcdf format (ignored for netcdf4p and netcdf4c)
+    <desc>pio netcdf format (ignored for netcdf4p, netcdf4c and adios)
     https://www.unidata.ucar.edu/software/netcdf/docs/data_type.html
     </desc>
     <values>

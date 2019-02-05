@@ -82,9 +82,11 @@ def buildlib(bldroot, installpath, case):
         pnetcdf_string = "PnetCDF_C_LIBRARY-ADVANCED"
         netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
 
+    adios_string = "ADIOS_FOUND:BOOL=TRUE"
     expect_string_found = False
     pnetcdf_found = False
     netcdf4_parallel_found = False
+    adios_found = False
 
     cache_file = open(os.path.join(pio_dir,"CMakeCache.txt"), "r")
     for line in cache_file:
@@ -94,6 +96,8 @@ def buildlib(bldroot, installpath, case):
             pnetcdf_found = True
         if re.search(netcdf4_string, line):
             netcdf4_parallel_found = True
+        if re.search(adios_string, line):
+            adios_found = True
 
     if pio_version == 1:
         installed_lib = os.path.join(installpath,"lib","libpio.a")
@@ -109,10 +113,13 @@ def buildlib(bldroot, installpath, case):
                 for item in glob.glob(os.path.join(pio_dir,"pio",glob_to_copy)):
                     safe_copy(item, "{}/include".format(installpath))
     else:
-        globs_to_copy = (os.path.join("src","clib","libpioc.*"),
+        globs_to_copy = [os.path.join("src","clib","libpioc.*"),
                          os.path.join("src","flib","libpiof.*"),
                          os.path.join("src","clib","*.h"),
-                         os.path.join("src","flib","*.mod"))
+                         os.path.join("src","flib","*.mod")]
+        # ADIOS requires an ADIOS to NetCDF conversion library
+        if adios_found:
+            globs_to_copy.append(os.path.join("tools","adios2pio-nm","libadios2pio-nm-lib.*"))
         for glob_to_copy in globs_to_copy:
             installed_file_time = 0
             for item in glob.glob(os.path.join(pio_dir,glob_to_copy)):
@@ -134,6 +141,8 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",pnetcdf"
     if netcdf4_parallel_found:
         valid_values += ",netcdf4p,netcdf4c"
+    if adios_found:
+        valid_values += ",adios"
     logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
 
     case.set_valid_values("PIO_TYPENAME",valid_values)
