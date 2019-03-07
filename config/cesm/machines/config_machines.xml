@@ -271,24 +271,10 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">ncarenv/1.2</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/17.0.1</command>
-	<command name="load">esmf_libs</command>
-	<command name="load">mkl</command>
+	<command name="load">intel/18.0.5</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/17.9</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
-	<command name="load">esmf-7.1.0r-defio-mpi-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
-	<command name="load">esmf-7.1.0r-defio-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
-	<command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
-	<command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gnu/7.3.0</command>
@@ -299,9 +285,9 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf-mpi/4.6.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.5.0</command>
-	<command name="load">pnetcdf/1.9.0</command>
+	<command name="load">mpt/2.18</command>
+	<command name="load">netcdf-mpi/4.6.1</command>
+	<command name="load">pnetcdf/1.11.0</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.15f</command>
@@ -322,7 +308,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.4.1.1</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
-	<command name="load">netcdf/4.5.0</command>
+	<command name="load">netcdf/4.6.1</command>
       </modules>
     </module_system>
     <environment_variables>
