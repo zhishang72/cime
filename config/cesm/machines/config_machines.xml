@@ -324,6 +324,9 @@ This allows using a different mpirun command to launch unit tests
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="LD_LIBRARY_PATH">/glade/u/apps/opt/intel/2018u4/compilers_and_libraries_2018.5.274/linux/mkl/lib/intel64_lin/:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
