@@ -25,6 +25,9 @@ module docn_shr_mod
 
   ! Note that model decomp will now come from reading in the mesh directly
 
+  ! stream data type
+  type(shr_strdata_type), public :: SDOCN
+
   ! input namelist variables
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
@@ -35,6 +38,7 @@ module docn_shr_mod
   character(CL) , public :: rest_file_strm        ! restart filename for streams
   character(CL) , public :: datamode              ! mode
   integer(IN)   , public :: aquap_option
+  real(R8)      , public :: sst_constant_value
   character(len=*), public, parameter :: nullstr = 'undefined'
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,7 +46,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine docn_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, SDOCN, ocn_present, ocn_prognostic, ocnrof_prognostic)
+       logunit, ocn_prognostic)
 
     ! !DESCRIPTION: Read in docn namelists
     implicit none
@@ -53,10 +57,7 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    type(shr_strdata_type) , intent(inout) :: SDOCN
-    logical                , intent(out)   :: ocn_present       ! flag
     logical                , intent(out)   :: ocn_prognostic    ! flag
-    logical                , intent(out)   :: ocnrof_prognostic ! flag
 
     !--- local variables ---
     integer(IN)   :: nunit       ! unit number
@@ -74,7 +75,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / docn_nml / decomp, &
-         restfilm, restfils, force_prognostic_true
+         restfilm, restfils, force_prognostic_true, sst_constant_value
 
     !----------------------------------------------------------------------------
     ! Read docn_in
@@ -96,10 +97,12 @@ CONTAINS
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,*)  ' sst_constant_value    = ',sst_constant_value
     endif
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+    call shr_mpi_bcast(sst_constant_value   ,mpicom,'sst_constant_value')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
@@ -148,11 +151,6 @@ CONTAINS
     ! Determine present and prognostic flag
     !----------------------------------------------------------------------------
 
-    ocn_present = .true.
-    if (trim(datamode) == 'NULL') then
-       ocn_present = .false.
-    end if
-
     ocn_prognostic = .false.
     if (force_prognostic_true) then
        ocn_prognostic  = .true.
@@ -164,11 +162,6 @@ CONTAINS
        ocn_prognostic = .true.
     endif
 
-    ocnrof_prognostic = .false.
-    if (force_prognostic_true .or. (trim(datamode) == 'IAF')) then
-       ocnrof_prognostic = .true.
-    end if
-       
   end subroutine docn_shr_read_namelists
 
 end module docn_shr_mod

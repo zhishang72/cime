@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib
+import glob, hashlib, shutil
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
@@ -19,6 +19,7 @@ def _download_checksum_file(rundir):
     """
     inputdata = Inputdata()
     protocol = "svn"
+    chksum_found = False
     # download and merge all available chksum files.
     while protocol is not None:
         protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
@@ -37,6 +38,10 @@ def _download_checksum_file(rundir):
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
+        if chksum_file:
+            chksum_found = True
+        else:
+            continue
 
         success = False
         rel_path = chksum_file
@@ -65,7 +70,7 @@ def _download_checksum_file(rundir):
                 else:
                     logger.warning("Could not automatically download file {}".
                                    format(full_path))
-
+    return chksum_found
 
 def _reformat_chksum_file(chksum_file, server_file):
     """
@@ -132,7 +137,10 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
             # this is intended to prevent a race condition in which
             # one case attempts to use a refdir before another one has
             # completed the download
-            os.rename(full_path+".tmp",full_path)
+            if success:
+                os.rename(full_path+".tmp",full_path)
+            else:
+                shutil.rmtree(full_path+".tmp")
         else:
             success = server.getfile(rel_path, full_path)
     return success
@@ -151,13 +159,13 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                                         input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
     else:
         if chksum:
-            _download_checksum_file(self.get_value("RUNDIR"))
+            chksum_found = _download_checksum_file(self.get_value("RUNDIR"))
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum and chksum_found)
         if download and not success:
             if not chksum:
-                _download_checksum_file(self.get_value("RUNDIR"))
+                chksum_found = _download_checksum_file(self.get_value("RUNDIR"))
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
     expect(not download or (download and success), "Could not find all inputdata on any server")
@@ -208,6 +216,8 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
 
         if os.path.isabs(run_refdir):
             refdir = run_refdir
+            expect(os.path.isdir(refdir), "Reference case directory {} does not exist or is not readable".format(refdir))
+
         else:
             refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
             if not os.path.isdir(refdir):
@@ -228,12 +238,12 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         if (not os.path.exists(rundir)):
             logger.debug("Creating run directory: {}".format(rundir))
             os.makedirs(rundir)
-
+        rpointerfile = None
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.info("Copy rpointer {}".format(rpointerfile))
             safe_copy(rpointerfile, rundir)
-
+        expect(rpointerfile,"Reference case directory {} does not contain any rpointer files".format(refdir))
         # link everything else
 
         for rcfile in glob.iglob(os.path.join(refdir,"*")):
@@ -269,7 +279,8 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
-    expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
+    if not data_list_files:
+        logger.warning("WARNING: No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
     if download:
@@ -334,7 +345,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                                 no_files_missing = _download_if_in_repo(server,
                                                                         input_data_root, rel_path.strip(os.sep),
                                                                         isdirectory=isdirectory)
-                                if no_files_missing:
+                                if no_files_missing and chksum:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:
                             if chksum:
@@ -352,10 +363,11 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     For file in filename perform a chksum and compare the result to that stored in
     the local checksumfile, if isdirectory chksum all files in the directory of form *.*
     """
+    hashfile = os.path.join(rundir, local_chksum_file)
     if not chksum_hash:
-        hashfile = os.path.join(rundir, local_chksum_file)
         if not os.path.isfile(hashfile):
-            expect(False, "Failed to find or download file {}".format(hashfile))
+            logger.warning("Failed to find or download file {}".format(hashfile))
+            return
 
         with open(hashfile) as fd:
             lines = fd.readlines()
@@ -365,6 +377,7 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
                     expect(chksum_hash[fname] == fchksum, " Inconsistent hashes in chksum for file {}".format(fname))
                 else:
                     chksum_hash[fname] = fchksum
+
     if isdirectory:
         filenames = glob.glob(os.path.join(filename,"*.*"))
     else:
@@ -380,8 +393,6 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
                 expect(chksum == chksum_hash[fname],
                        "chksum mismatch for file {} expected {} found {}".
                        format(os.path.join(input_data_root,fname),chksum, chksum_hash[fname]))
-
-
 
 def md5(fname):
     """
